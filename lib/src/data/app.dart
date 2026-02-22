@@ -1,6 +1,7 @@
 import "dart:io";
 
 import "package:version/version.dart";
+import "package:dam/utils.dart";
 
 class App {
   final Version version;
@@ -12,4 +13,15 @@ class App {
     required this.name,
     required this.version,
   });
+
+  App.fromJson(Json json) :
+    name = json["name"],
+    dir = Directory(json["dir"]),
+    version = Version.parse(json["version"]);
+
+  Json toJson() => {
+    "name": name,
+    "dir": dir.absolute.path,
+    "version": version.toString(),
+  };
 }

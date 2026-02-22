@@ -1,0 +1,16 @@
+name: MLN Bot
+version: "1.1"
+cron:
+  interval: "* * * * *"
+  executable: bin/server.exe
+systemd:
+  compile: dart compile exe bin/server.dart
+  executable: bin/server.exe
+web-server:
+  domain: mln-bot.example.com
+  block-crawlers: true
+  file-server:
+    path: build/web
+  reverse-proxy:
+    port: 5001
+    url-prefix: /socket

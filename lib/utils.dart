@@ -1,11 +1,17 @@
 import 'dart:io';
 
 import 'package:yaml/yaml.dart';
+import "package:path/path.dart" as p;
 
 typedef Json = Map<String, dynamic>;
 
-extension DirUtils on Directory {
-  String operator /(String other) => "$path/$other";
+extension DirectoryUtils on Directory {
+  static Directory get home => Directory(String.fromEnvironment("HOME"));
+  String operator /(String other) => p.normalize("$absolutePath/$other");
+}
+
+extension FileDirUtils on FileSystemEntity {
+  String get absolutePath => p.normalize(p.absolute(absolute.path));
 }
 
 extension JsonUtils on Json {
@@ -14,8 +20,6 @@ extension JsonUtils on Json {
     if (value == null) return null;
     return transform(value);
   }
-
-  Json asJson(String key) => (this[key] as Map).cast<String, dynamic>();
 }
 
 extension YamlMapConverter on YamlMap {

@@ -1,16 +1,13 @@
 name: MLN Bot
-version: "1.1"
-cron:
-  interval: "* * * * *"
-  executable: bin/server.exe
+version: "1.0"
 systemd:
-  compile: dart compile exe bin/server.dart
-  executable: bin/server.exe
+  compile: dart compile exe bin/mln_bot.dart
+  executable: bin/mln_bot.exe
 web-server:
-  domain: mln-bot.example.com
+  domain: mln-bot.forgot-semicolon.com
   block-crawlers: true
-  file-server:
-    path: build/web
   reverse-proxy:
     port: 5001
-    url-prefix: /socket
+    url-prefix: /api
+  files-server:
+    path: build/web

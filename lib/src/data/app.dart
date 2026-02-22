@@ -24,4 +24,6 @@ class App {
     "dir": dir.absolute.path,
     "version": version.toString(),
   };
+
+  File get configFile => File(dir / "dam.yaml");
 }

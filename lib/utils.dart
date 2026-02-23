@@ -66,4 +66,7 @@ extension FileUtils on File {
 
   Future<bool> isSafeToWrite(String header) async =>
     !existsSync() || (await wasGeneratedByDam(header));
+
+  Future<String> readOrEmpty() async => existsSync()
+    ? (await readAsString()) : "";
 }

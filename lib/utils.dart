@@ -5,8 +5,12 @@ import "package:path/path.dart" as p;
 
 typedef Json = Map<String, dynamic>;
 
+class LinuxUtils {
+  static Directory get home => Directory(String.fromEnvironment("HOME", defaultValue: Directory.current.absolutePath));
+  static String get user => String.fromEnvironment("USER", defaultValue: "user");
+}
+
 extension DirectoryUtils on Directory {
-  static Directory get home => Directory(String.fromEnvironment("HOME"));
   String operator /(String other) => p.normalize("$absolutePath/$other");
 }
 
@@ -47,4 +51,19 @@ extension YamlMapConverter on YamlMap {
     });
     return map;
   }
+}
+
+extension FileUtils on File {
+  // isInstalled = exists && written by DAM
+  // safeToWrite = !exists || written by DAM
+  Future<bool> wasGeneratedByDam(String header) async {
+    final contents = await readAsString();
+    return contents.startsWith(header);
+  }
+
+  Future<bool> isInstalledByDam(String header) async =>
+    existsSync() && (await wasGeneratedByDam(header));
+
+  Future<bool> isSafeToWrite(String header) async =>
+    !existsSync() || (await wasGeneratedByDam(header));
 }

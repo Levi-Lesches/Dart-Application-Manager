@@ -38,23 +38,16 @@ class SystemdService extends AppService<SystemdConfig> {
   // See: systemd-analyze --user unit-paths
   File getServiceFile(App app) => File("/etc/systemd/service/${app.name}.service");
 
-  // A service file is safe to manipulate if it either does not exist
-  // or it was previously written by DAM.
   Future<void> checkIfSafe(File file) async {
-    if (!file.existsSync()) return;
-    // Check to see if the file includes the DAM header.
-    final otherContents = await file.readAsString();
-    if (!otherContents.startsWith(_header)) {
-      throw DamError("The file service file ${file.path} is already registered to another service");
+    if (!await file.isSafeToWrite(_header)) {
+      throw DamError("The service file ${file.path} is already registered to another service");
     }
   }
 
   @override
   Future<bool> isInstalled(App app) async {
     final file = getServiceFile(app);
-    if (!file.existsSync()) return false;
-    final contents = await file.readAsString();
-    return contents.startsWith(_header);
+    return await file.isInstalledByDam(_header);
   }
 
   @override
@@ -69,6 +62,8 @@ class SystemdService extends AppService<SystemdConfig> {
 
   @override
   Future<void> uninstall(App app) async {
+    await Process.run("sudo", ["systemctl", "stop", "service"]);
+    await Process.run("sudo", ["systemctl", "disable", "service"]);
     final file = getServiceFile(app);
     await checkIfSafe(file);
     await file.delete();

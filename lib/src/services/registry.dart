@@ -18,6 +18,13 @@ class Registry {
     ];
   }
 
+  Future<void> register(App app) async {
+    final apps = await getApps();
+    apps.add(app);
+    final contents = jsonEncode([apps]);
+    await File(AppService.root / "apps.json").writeAsString(contents);
+  }
+
   Future<AppConfig> getConfig(App app) async {
     final file = File(app.dir / "dam.yaml");
     final contents = await file.readAsString();

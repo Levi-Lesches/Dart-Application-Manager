@@ -96,19 +96,34 @@ class CaddyService extends AppService<WebServerConfig> {
 
   Future<void> generateMainCaddyfile() async {
     final buffer = StringBuffer();
-    final prefix = await File(dir / "prefix.caddyfile").readOrEmpty();
-    final suffix = await File(dir / "suffix.caddyfile").readOrEmpty();
+
+    // Write the DAM-controlled parts of the Caddy file
     buffer.writeln(_header);
-    buffer.writeln(prefix);
     buffer.writeln(_caddyfilePrefix);
     for (final subfile in _getAllCaddyfiles()) {
       buffer.writeln("import ${subfile.absolutePath}");
     }
     buffer.writeln();
-    buffer.writeln(suffix);
+
+    // Append the user's existing Caddyfile, if it exists
+    final userCaddyfile = File(LinuxUtils.home / "Caddyfile");
+    if (userCaddyfile.existsSync()) {
+      final contents = await userCaddyfile.readAsString();
+      buffer.writeln();
+      buffer.writeln("# ========== From ${userCaddyfile.absolutePath} ==========");
+      buffer.writeln(contents);
+      buffer.writeln("# ========== End of user-defined Caddyfile ========== ");
+    }
+
     buffer.write(_caddyfileSuffix);
     final file = File(dir / "Caddyfile");
     await file.create(recursive: true);
     await file.writeAsString(buffer.toString());
+
+    await Process.run(
+      "caddy",
+      ["reload"],
+      workingDirectory: dir.absolutePath,
+    );
   }
 }

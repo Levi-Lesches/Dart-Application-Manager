@@ -14,9 +14,13 @@ class App {
     required this.version,
   });
 
-  App.fromJson(Json json) :
+  App.fromRegistry(Json json) :
     name = json["name"],
     dir = Directory(json["dir"]),
+    version = Version.parse(json["version"]);
+
+  App.fromConfig(this.dir, Json json) :
+    name = json["name"],
     version = Version.parse(json["version"]);
 
   Json toJson() => {
@@ -26,4 +30,7 @@ class App {
   };
 
   File get configFile => File(dir / "dam.yaml");
+
+  @override
+  String toString() => name;
 }

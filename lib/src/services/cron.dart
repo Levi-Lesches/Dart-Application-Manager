@@ -13,6 +13,9 @@ class CronService extends AppService<CronConfig> {
   File getFile(App app) => File(dir / app.name);
 
   @override
+  CronConfig? getConfig(AppConfig config) => config.cron;
+
+  @override
   String generate(App app, CronConfig config) {
     final buffer = StringBuffer();
     final user = LinuxUtils.user;
@@ -24,9 +27,7 @@ class CronService extends AppService<CronConfig> {
   }
 
   @override
-  Future<bool> isInstalled(App app) async {
-    return getFile(app).isInstalledByDam(_header);
-  }
+  Future<bool> isInstalled(App app) => getFile(app).isInstalledByDam(_header);
 
   Future<void> checkIfSafe(File file) async {
     if (!await file.isSafeToWrite(_header)) {
@@ -35,18 +36,27 @@ class CronService extends AppService<CronConfig> {
   }
 
   @override
-  Future<void> install(App app, CronConfig config) async {
+  Future<void> install(App app, CronConfig config, {required bool dryRun}) async {
+    logger.info("Installing cron configuration");
     final contents = generate(app, config);
     final file = getFile(app);
-    await checkIfSafe(file);
-    await file.create(recursive: true);
-    await file.writeAsString(contents);
+    logger.debug("Writing cron file in ${file.absolutePath}");
+    logger.logFileContent(contents);
+    if (!dryRun) {
+      await checkIfSafe(file);
+      await file.create(recursive: true);
+      await file.writeAsString(contents);
+    }
   }
 
   @override
-  Future<void> uninstall(App app) async {
+  Future<void> uninstall(App app, {required bool dryRun}) async {
+    logger.info("Uninstalling cron configuration");
     final file = getFile(app);
-    await checkIfSafe(file);
-    await file.delete();
+    logger.debug("Deleting cron file at ${file.absolutePath}");
+    if (!dryRun) {
+      await checkIfSafe(file);
+      await file.delete();
+    }
   }
 }

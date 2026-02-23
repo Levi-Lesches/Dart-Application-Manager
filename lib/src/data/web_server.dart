@@ -1,4 +1,4 @@
-import 'package:dam/utils.dart';
+import "package:dam/utils.dart";
 
 class FileServerConfig {
   final String path;
@@ -25,7 +25,7 @@ class ReverseProxyConfig {
     urlPrefix = json["url-prefix"];
 }
 
-class WebServerConfig {
+class WebServerConfig extends BaseConfig {
   final String domain;
   final bool blockCrawlers;
 

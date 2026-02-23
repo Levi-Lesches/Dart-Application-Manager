@@ -1,6 +1,6 @@
-import 'package:dam/utils.dart';
+import "package:dam/utils.dart";
 
-class CronConfig {
+class CronConfig extends BaseConfig {
   final String interval;
   final String executable;
 

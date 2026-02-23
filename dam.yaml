@@ -1,0 +1,19 @@
+name: example
+version: "1.0"
+
+cron:
+  interval: "* * * * *"
+  executable: echo $(date +%s) > ~/temp.txt
+
+systemd:
+  compile: dart compile exe backend/bin/example.dart
+  executable: backend/bin/example.exe
+
+web-server:
+  domain: example.forgot-semicolon.com
+  block-crawlers: true
+  reverse-proxy:
+    port: 5001
+    url-prefix: /api/*
+  file-server:
+    path: frontend/build/web

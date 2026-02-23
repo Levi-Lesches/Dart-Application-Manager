@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:dam/utils.dart";
 
 import "app.dart";
@@ -18,9 +20,9 @@ class AppConfig {
     required this.webServer,
   });
 
-  AppConfig.fromJson(Json json) :
-    app = App.fromJson(json),  // not a typo -- metadata is at the top level
-    cron = CronConfig.fromJson(json["cron"]),
-    systemd = SystemdConfig.fromJson(json["systemd"]),
-    webServer = WebServerConfig.fromJson(json["web-server"]);
+  AppConfig.fromJson(Directory dir, Json json) :
+    app = App.fromConfig(dir, json),  // not a typo -- metadata is at the top level
+    cron = json.maybe("cron", CronConfig.fromJson),
+    systemd = json.maybe("systemd", SystemdConfig.fromJson),
+    webServer = json.maybe("web-server", WebServerConfig.fromJson);
 }

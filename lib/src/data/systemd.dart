@@ -1,6 +1,6 @@
-import 'package:dam/utils.dart';
+import "package:dam/utils.dart";
 
-class SystemdConfig {
+class SystemdConfig extends BaseConfig {
   final String compileCommand;
   final String executableCommand;
 

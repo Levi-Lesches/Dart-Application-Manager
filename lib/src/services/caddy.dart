@@ -41,6 +41,9 @@ class CaddyService extends AppService<WebServerConfig> {
   final Directory dir = Directory(AppService.root / "caddy");
 
   @override
+  WebServerConfig? getConfig(AppConfig config) => config.webServer;
+
+  @override
   String generate(App app, WebServerConfig config) {
     final buffer = StringBuffer();
     buffer.writeln(_header);
@@ -67,34 +70,47 @@ class CaddyService extends AppService<WebServerConfig> {
     return buffer.toString();
   }
 
+  static final File _userCaddyfile = File(LinuxUtils.home / "Caddyfile");
+  List<File> _getAllCaddyfiles() => [
+    if (dir.existsSync())
+      for (final file in dir.listSync())
+        if (file is File && file.path.endsWith(".caddy"))
+          file,
+    if (_userCaddyfile.existsSync())
+      _userCaddyfile,
+  ];
+
   File _getCaddyfile(App app) => File(dir / "${app.name}.caddy");
-  List<File> _getAllCaddyfiles() {
-    if (!dir.existsSync()) return [];
-    return dir.listSync()
-      .whereType<File>()
-      .where((file) => file.path.endsWith(".caddy"))
-      .toList();
-  }
 
   @override
-  Future<bool> isInstalled(App app) => _getCaddyfile(app).exists();
+  Future<bool> isInstalled(App app) => _getCaddyfile(app).isInstalledByDam(_header);
 
   @override
-  Future<void> install(App app, WebServerConfig config) async {
+  Future<void> install(App app, WebServerConfig config, {required bool dryRun}) async {
+    logger.info("Installing Caddy configuration");
     final contents = generate(app, config);
     final file = _getCaddyfile(app);
-    await file.create(recursive: true);
-    await file.writeAsString(contents);
-    await generateMainCaddyfile();
+    logger.debug("Generating project-level Caddyfile at ${file.absolutePath}");
+    logger.logFileContent(contents);
+    if (!dryRun) {
+      await file.create(recursive: true);
+      await file.writeAsString(contents);
+    }
+    await generateMainCaddyfile(dryRun: dryRun);
   }
 
   @override
-  Future<void> uninstall(App app) async {
-    await _getCaddyfile(app).delete();
-    await generateMainCaddyfile();
+  Future<void> uninstall(App app, {required bool dryRun}) async {
+    logger.info("Deleting Caddy configuration");
+    final file = _getCaddyfile(app);
+    logger.debug("Deleting project-level Caddyfile at ${file.absolutePath}");
+    if (!dryRun) {
+      await file.delete();
+    }
+    await generateMainCaddyfile(dryRun: dryRun);
   }
 
-  Future<void> generateMainCaddyfile() async {
+  Future<void> generateMainCaddyfile({required bool dryRun}) async {
     final buffer = StringBuffer();
 
     // Write the DAM-controlled parts of the Caddy file
@@ -103,21 +119,18 @@ class CaddyService extends AppService<WebServerConfig> {
     for (final subfile in _getAllCaddyfiles()) {
       buffer.writeln("import ${subfile.absolutePath}");
     }
-    final userCaddyfile = File(LinuxUtils.home / "Caddyfile");
-    if (userCaddyfile.existsSync()) {
-      buffer.writeln("import ${userCaddyfile.absolutePath}");
-    }
     buffer.writeln();
-
     buffer.write(_caddyfileSuffix);
-    final file = File(dir / "Caddyfile");
-    await file.create(recursive: true);
-    await file.writeAsString(buffer.toString());
 
-    await Process.run(
-      "caddy",
-      ["reload"],
-      workingDirectory: dir.absolutePath,
-    );
+    final file = File(dir / "Caddyfile");
+    final contents = buffer.toString();
+    logger.debug("Writing top-level Caddyfile at ${file.absolutePath}");
+    logger.logFileContent(contents);
+    if (!dryRun) {
+      await file.create(recursive: true);
+      await file.writeAsString(contents);
+    }
+
+    await logger.runProcess("caddy", ["reload"], dir: dir, dryRun: dryRun);
   }
 }

@@ -1,13 +1,55 @@
-import 'dart:io';
+import "dart:io";
 
-import 'package:yaml/yaml.dart';
+import "package:logger/logger.dart";
+import "package:yaml/yaml.dart";
 import "package:path/path.dart" as p;
 
+abstract class BaseConfig { }
 typedef Json = Map<String, dynamic>;
 
+final logger = Logger(
+  filter: ProductionFilter(),
+  printer: SimplePrinter(),
+);
+
+extension LoggerUtils on Logger {
+  void error(String message) => e(message);
+  void info(String message) => i(message);
+  void debug(String message) => d(message);
+  void trace(String message) => t(message);
+
+  void success(String message) => info("✅ $message");
+  void failure(String message) => error("❌ $message");
+
+  void logFileContent(String contents) {
+    trace("========== Contents of file ==========\n$contents");
+    trace("==========   End of file    ==========");
+  }
+
+  Future<void> runProcess(
+    String name,
+    List<String> args, {
+    required bool dryRun,
+    Directory? dir,
+  }) async {
+    if (dir == null) {
+      debug("Running: `$name ${args.join(' ')}`");
+    } else {
+      debug("Running: `$name ${args.join(' ')}` in ${dir.absolutePath}");
+    }
+    if (!dryRun) {
+      final result = await Process.run(name, args, workingDirectory: dir?.absolutePath);
+      trace("Process output: ");
+      trace("- Exit code: ${result.exitCode}");
+      trace("- Error output: ${result.stderr}");
+      trace("- Standard output: ${result.stdout}");
+    }
+  }
+}
+
 class LinuxUtils {
-  static Directory get home => Directory(String.fromEnvironment("HOME", defaultValue: Directory.current.absolutePath));
-  static String get user => String.fromEnvironment("USER", defaultValue: "user");
+  static Directory get home => Directory(Platform.environment["HOME"] ?? Directory.current.absolutePath);
+  static String get user => Platform.environment["USER"] ?? "user";
 }
 
 extension DirectoryUtils on Directory {
@@ -32,7 +74,7 @@ extension YamlMapConverter on YamlMap {
       return v.toMap();
     }
     else if (v is YamlList) {
-      var list = <dynamic>[];
+      final list = <dynamic>[];
       for (final e in v) {
         list.add(_convertNode(e));
       }
@@ -44,7 +86,7 @@ extension YamlMapConverter on YamlMap {
   }
 
   Map<String, dynamic> toMap() {
-    var map = <String, dynamic>{};
+    final map = <String, dynamic>{};
     nodes.forEach((k, v) {
       final key = (k as YamlScalar).value.toString();
       map[key] = _convertNode(v.value);

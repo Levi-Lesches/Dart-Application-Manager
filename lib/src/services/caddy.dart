@@ -103,17 +103,11 @@ class CaddyService extends AppService<WebServerConfig> {
     for (final subfile in _getAllCaddyfiles()) {
       buffer.writeln("import ${subfile.absolutePath}");
     }
-    buffer.writeln();
-
-    // Append the user's existing Caddyfile, if it exists
     final userCaddyfile = File(LinuxUtils.home / "Caddyfile");
     if (userCaddyfile.existsSync()) {
-      final contents = await userCaddyfile.readAsString();
-      buffer.writeln();
-      buffer.writeln("# ========== From ${userCaddyfile.absolutePath} ==========");
-      buffer.writeln(contents);
-      buffer.writeln("# ========== End of user-defined Caddyfile ========== ");
+      buffer.writeln("import ${userCaddyfile.absolutePath}");
     }
+    buffer.writeln();
 
     buffer.write(_caddyfileSuffix);
     final file = File(dir / "Caddyfile");
